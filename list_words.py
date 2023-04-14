@@ -226,4 +226,4 @@ def get_list_words():
     # "почти каждое слово" это значит, что есть строки-исключения, например:
     # "красИвее,сравн.ст.нар.красИво". Поэтому мы делим строку на 2 части (до запятой и после)
     # и как раз в части до запятой находится нужное слово. Его мы и оставляем в списке
-    return sorted([row.split(',')[0] for row in words_string], key=lambda word: word.lower())
+    return sorted(set([row.split(',')[0] for row in words_string]), key=lambda word: word.lower())

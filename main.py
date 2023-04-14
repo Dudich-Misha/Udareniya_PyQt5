@@ -1,9 +1,10 @@
 import sys
 from random import sample
 from pymorphy2 import MorphAnalyzer
-from list_words import get_list_words
+import sqlite3
+
 from PyQt5.QtWidgets import QMainWindow, QApplication, QDialog, QPushButton, QMessageBox, \
-    QTableWidgetItem
+    QTableWidgetItem, QAbstractItemView
 from MainMenu_style import Ui_MainWindow
 from TrainingDialog_style import Ui_Dialog as Ui_TrainingDialog
 from CountWordsDialog_style import Ui_Dialog as Ui_CountWordsDialog
@@ -28,7 +29,10 @@ class MainMenu(QMainWindow, Ui_MainWindow):
         self.initUi()
 
     def initUi(self):
-        self.list_word = get_list_words()
+        con = sqlite3.connect('WordsDb.db')
+        cur = con.cursor()
+        self.list_word = sorted([word[1] for word in cur.execute('select * from Words').fetchall()],
+                                key=lambda word: word.lower())
         # при нажатии на кнопку создастся тренировка
         self.training_btn.clicked.connect(self.create_training)
         # при нажатии на кнопку откроется меню работы со словарём
@@ -232,7 +236,6 @@ class MyDictionaryDialog(QDialog, Ui_MyDictionaryDialog):
         self.tableWidget.setColumnCount(1)
         self.tableWidget.setRowCount(0)
         self.tableWidget.setColumnWidth(0, 270)
-        self.tableWidget.setHorizontalHeaderLabels(['Слово'])
         for i, elem in enumerate(new_table):
             self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
             self.tableWidget.setItem(i, 0, QTableWidgetItem(str(elem)))
@@ -243,6 +246,7 @@ class MyDictionaryDialog(QDialog, Ui_MyDictionaryDialog):
         self.tableWidget.setRowCount(0)
         self.tableWidget.setColumnWidth(0, 270)
         self.tableWidget.setHorizontalHeaderLabels(['Слово'])
+        self.tableWidget.setEditTriggers(QAbstractItemView.EditTrigger(0))
         for i, elem in enumerate(self.parent().list_word):
             self.tableWidget.setRowCount(self.tableWidget.rowCount() + 1)
             self.tableWidget.setItem(i, 0, QTableWidgetItem(str(elem)))
@@ -272,6 +276,10 @@ class MyDictionaryDialog(QDialog, Ui_MyDictionaryDialog):
                 self, 'Оповещение', 'В словаре не может быть меньше 30 слов', QMessageBox.Ok)
             return
         # удаляем из выделенное слово из списка
+        con = sqlite3.connect('WordsDb.db')
+        cur = con.cursor()
+        cur.execute(f'delete from Words where word = "{self.deleted_word}"')
+        con.commit()
         self.parent().list_word.remove(self.deleted_word)
         # Показываем изменённую таблицу
         self.search_word()
@@ -300,7 +308,7 @@ class AddWordDialog(QDialog, Ui_AddWordDialog):
         VOWELS = 'А, Е, И, О, У, Ы, Э, Ю, Я'.split(', ')
         # если слово уже есть в списке
         if word in self.parent().parent().list_word:
-            STR_ = 'Это слово уже естьв списке, попробуйте другое'
+            STR_ = 'Это слово уже есть в списке, попробуйте другое'
             valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
         # если в слове встречаются символы не из русского алфавита
         elif not all(map(lambda let: let in RUSSIAN_ALPHABET, word.lower())):
@@ -327,7 +335,12 @@ class AddWordDialog(QDialog, Ui_AddWordDialog):
             valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
         else:
             # добавляем слово в список. Если в слове есть буква "Ё", меняем её на "Е"
-            self.parent().parent().list_word.append(word.replace('Ё', 'Е'))
+            word = word.replace('Ё', 'Е')
+            self.parent().parent().list_word.append(word)
+            con = sqlite3.connect('WordsDb.db')
+            cur = con.cursor()
+            cur.execute(f'insert into Words(word) values("{word}")')
+            con.commit()
             # сортируем полученный список по алфавиту
             self.parent().parent().list_word = sorted(self.parent().parent().list_word,
                                                       key=lambda elem: elem.lower())
