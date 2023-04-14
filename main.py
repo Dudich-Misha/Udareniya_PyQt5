@@ -29,7 +29,7 @@ class MainMenu(QMainWindow, Ui_MainWindow):
         self.initUi()
 
     def initUi(self):
-        con = sqlite3.connect('WordsDb.db')
+        con = sqlite3.connect('db/WordsDb.db')
         cur = con.cursor()
         self.list_word = sorted([word[1] for word in cur.execute('select * from Words').fetchall()],
                                 key=lambda word: word.lower())
@@ -276,7 +276,7 @@ class MyDictionaryDialog(QDialog, Ui_MyDictionaryDialog):
                 self, 'Оповещение', 'В словаре не может быть меньше 30 слов', QMessageBox.Ok)
             return
         # удаляем из выделенное слово из списка
-        con = sqlite3.connect('WordsDb.db')
+        con = sqlite3.connect('db/WordsDb.db')
         cur = con.cursor()
         cur.execute(f'delete from Words where word = "{self.deleted_word}"')
         con.commit()
@@ -330,11 +330,12 @@ class AddWordDialog(QDialog, Ui_AddWordDialog):
         elif 'ё' in word:
             STR_ = 'Ошибка. Буква "ё" всегда ударная'
             valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
-        # если слова не существует
-        elif str(MorphAnalyzer().parse(word)[0].methods_stack[0][0]) == 'FakeDictionary()':
-            STR_ = 'Скорее всего, такого слова не существует. Попробуйте другое'
-            valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
-        elif len(set([vowel.lower() for vowel in VOWELS]).intersection(set(word.lower()))) == 1:
+        # # если слова не существует
+        # elif str(MorphAnalyzer().parse(word)[0].methods_stack[0][0]) == 'FakeDictionary()':
+        #     STR_ = 'Скорее всего, такого слова не существует. Попробуйте другое'
+        #     valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
+        # если в слове одна гласная
+        elif sum([word.lower().count(vowel.lower()) for vowel in VOWELS]) == 1:
             STR_ = 'В этом слове одна гласная, она же и будет ударной. Нет смысла добавлять ' \
                    'такое слово'
             valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
@@ -342,7 +343,7 @@ class AddWordDialog(QDialog, Ui_AddWordDialog):
             # добавляем слово в список. Если в слове есть буква "Ё", меняем её на "Е"
             word = word.replace('Ё', 'Е')
             self.parent().parent().list_word.append(word)
-            con = sqlite3.connect('WordsDb.db')
+            con = sqlite3.connect('db/WordsDb.db')
             cur = con.cursor()
             cur.execute(f'insert into Words(word) values("{word}")')
             con.commit()
