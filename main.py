@@ -330,8 +330,13 @@ class AddWordDialog(QDialog, Ui_AddWordDialog):
         elif 'ё' in word:
             STR_ = 'Ошибка. Буква "ё" всегда ударная'
             valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
+        # если слова не существует
         elif str(MorphAnalyzer().parse(word)[0].methods_stack[0][0]) == 'FakeDictionary()':
-            STR_ = 'Скорее всего такого слова не существует. Попробуйте другое'
+            STR_ = 'Скорее всего, такого слова не существует. Попробуйте другое'
+            valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
+        elif len(set([vowel.lower() for vowel in VOWELS]).intersection(set(word.lower()))) == 1:
+            STR_ = 'В этом слове одна гласная, она же и будет ударной. Нет смысла добавлять ' \
+                   'такое слово'
             valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
         else:
             # добавляем слово в список. Если в слове есть буква "Ё", меняем её на "Е"
