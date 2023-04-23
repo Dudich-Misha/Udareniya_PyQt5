@@ -323,6 +323,7 @@ class AddWordDialog(QDialog, Ui_AddWordDialog):
         elif len([letter for letter in word if letter.isupper()]) > 1:
             STR_ = 'Необходимо выделить капсом ОДНУ букву, на которую падает ударение.'
             valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
+        # если выделенная верхним регистром ударная буква оказалась согласной
         elif [letter for letter in word if letter.isupper()][0] not in VOWELS:
             STR_ = 'Необходимо выделить капсом ГЛАСНУЮ букву, на которую падает ударение.'
             valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
@@ -338,6 +339,11 @@ class AddWordDialog(QDialog, Ui_AddWordDialog):
         elif sum([word.lower().count(vowel.lower()) for vowel in VOWELS]) == 1:
             STR_ = 'В этом слове одна гласная, она же и будет ударной. Нет смысла добавлять ' \
                    'такое слово'
+            valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
+        # если пользователь пытается добавить омограф слова из списка
+        elif word.lower() in list(map(lambda x: x.lower(), self.parent().parent().list_word)):
+            STR_ = 'Нельзя добавлять омографы (слова, совпадающие в написании, ' \
+                   'но различающиеся произношением) слов из списка'
             valid = QMessageBox.information(self, 'Некорректный ввод', STR_, QMessageBox.Ok)
         else:
             # добавляем слово в список. Если в слове есть буква "Ё", меняем её на "Е"
